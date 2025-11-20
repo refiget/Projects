@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-cd ~/projects/cs61a_learning
-source .venv/bin/activate
-jupyter lab --no-browser --port 8888

@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import os  #Operating System Interface  
+import sys #Python interpreter interface 
+import argparse  #CLI argument parser
+from openai import OpenAI
+from datetime import datetime
+import textwrap
+
+# --- Configure Zone ---
+# Store the API key in env variable: export DEEPSEEK_API_KEY="sk-..."
+API_KEY = os.getenv("DEEPSEEK_API_KEY")
+BASE_URL = "https://api.deepseek.com"
+
+
+
+# Define a function that records the dialogue
+def save_dialogue(prompt, response):
+    current_times = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    wrapped_prompt = textwrap.fill(f"Q: {prompt}", width = 80)
+    wrapped_response = textwrap.fill(f"A: {response}", width = 80)
+
+    with open("chat_history.txt", "a", encoding = "utf-8") as f:
+        f.write(f"[{current_times}]")
+        f.write(f"[{wrapped_prompt}]") 
+        f.write(f"[{wrapped_response}]")
+        f.write(" " * 80)
+
+def chat(prompt, stream = True):
+    if not API_KEY:
+        print(" ERROR: can't find API Key. Please set env variable DEEPSEEK_API_KEY")
+        return
+
+    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "你是一个运行在终端的ai助手，不要废话，不要拓展，问啥回答啥"},
+                {"role": "user", "content": prompt},
+            ],
+            stream=stream # 开启流式输出，像黑客帝国一样酷
+        )
+
+        full_response = "" 
+        if stream:
+            for chunk in response:
+                if chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+                    # print and don't change line
+                    print(chunk.choices[0].delta.content, end = "", flush=True)
+            print()
+        else:
+            print(response.choices[0].message.content)
+        save_dialogue(prompt, full_response)
+            
+    except Exception as e:
+        print(f"error {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description="DeepSeek Terminal Client")
+    parser.add_argument("prompt", nargs="*", help="Questions")
+    args = parser.parse_args()
+
+    if args.prompt:
+        user_input = " ".join(args.prompt)
+        chat(user_input)
+    else:
+        print("=== DeepSeek ClI (Ctrl+c exit) === " )
+        while True:
+            try:
+                user_input = input("\n>>>")
+                if user_input.lower() in ["exit", "quit"]:
+                    break
+                chat(user_input)
+            except KeyboardInterrupt:
+                print("\nBye!")
+                break
+
+if __name__ == "__main__":
+    main()

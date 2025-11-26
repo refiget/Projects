@@ -1,1 +1,8 @@
 [2025-11-24 18:53:08][Q: hello][A: Hello! How can I help you?]                                                                                
+[2025-11-26 15:06:41][Q: how to subtitute all the variable name][A: Use `:%s/\<old_variable\>/new_variable/g` in normal mode.]                                                                                [2025-11-26 17:07:44][Q: hell][A: hi]                                                                                [2025-11-26 17:08:11][Q: tell a story about King-lion][A: King-lion ruled the vast savanna with a mighty roar. His golden mane
+shimmered under the sun as he patrolled his territory. One day, a drought
+struck, and the waterholes dried up. The animals grew desperate.  King-lion
+called a meeting. "We must dig deeper," he declared. With his strength, he broke
+the hard ground, revealing a hidden spring. The animals drank, their lives
+saved. From that day, they honored him not just for his power, but for his
+wisdom and care.]                                                                                

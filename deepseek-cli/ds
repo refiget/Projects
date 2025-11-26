@@ -36,7 +36,7 @@ def chat(prompt, stream = True):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一个运行在终端的ai助手，不要废话，不要拓展，问啥回答啥"},
+                {"role": "system", "content": "你是一个运行在终端的ai助手，编程语言为Python，editor为neovim,不要废话，不要拓展，问啥回答啥"},
                 {"role": "user", "content": prompt},
             ],
             stream=stream # 开启流式输出，像黑客帝国一样酷
@@ -48,7 +48,7 @@ def chat(prompt, stream = True):
                 if chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
                     # print and don't change line
-                    print(chunk.choices[0].delta.content, end = "", flush=True)
+                    print(f"\033[36m{chunk.choices[0].delta.content}\033[0m", end = "", flush=True)
             print()
         else:
             print(response.choices[0].message.content)

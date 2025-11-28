@@ -1,33 +1,87 @@
 #!/usr/bin/env python3
-import os  #Operating System Interface  
-import sys #Python interpreter interface 
-import argparse  #CLI argument parser
-from openai import OpenAI
+import os
+import sys
+import re
+import argparse
 from datetime import datetime
-import textwrap
+from openai import OpenAI
 
-# --- Configure Zone ---
-# Store the API key in env variable: export DEEPSEEK_API_KEY="sk-..."
+# ========== 配置区域 ==========
 API_KEY = os.getenv("DEEPSEEK_API_KEY")
 BASE_URL = "https://api.deepseek.com"
+LOG_FILE = os.path.expanduser("~/Projects/deepseek-cli/chat_history.txt")
+
+# ========== Dracula 配色表 (优化版) ==========
+COLOR_TEXT = "\033[96m"
+
+DRACULA_PURPLE = "\033[95m"
+DRACULA_PINK = "\033[91m"
+DRACULA_GREEN = "\033[92m"
+DRACULA_YELLOW = "\033[93m"
+DRACULA_CYAN = "\033[96m"
+# ⚡️ 修改：注释改为深灰色，降低视觉干扰，更易读
+DRACULA_COMMENT = "\033[90m"
+RESET = "\033[0m"
 
 
+# ========== Dracula 语法高亮逻辑 ==========
+def apply_dracula_theme(code):
+    # 1. 字符串 (Green)
+    code = re.sub(r"(['\"].*?['\"])", DRACULA_GREEN + r"\1" + RESET, code)
 
-# Define a function that records the dialogue
+    # 2. 注释 (Grey)
+    code = re.sub(r"(#.*)", DRACULA_COMMENT + r"\1" + RESET, code)
+
+    # 3. 关键字组 A (Purple)
+    kw_purple = r"\b(def|class|import|from|as|try|except|finally|with|pass|lambda|async|await)\b"
+    code = re.sub(kw_purple, DRACULA_PURPLE + r"\1" + RESET, code)
+
+    # 4. 关键字组 B (Pink)
+    kw_pink = r"\b(if|elif|else|for|while|return|break|continue|in|is|not|and|or|raise|assert)\b"
+    code = re.sub(kw_pink, DRACULA_PINK + r"\1" + RESET, code)
+
+    # 5. 特殊常量 (Purple)
+    kw_const = r"\b(True|False|None|self)\b"
+    code = re.sub(kw_const, DRACULA_PURPLE + r"\1" + RESET, code)
+
+    # 6. 数字 (Yellow)
+    code = re.sub(r"\b(\d+)\b", DRACULA_YELLOW + r"\1" + RESET, code)
+
+    # 7. 函数调用 (Yellow)
+    code = re.sub(r"(\w+)(?=\()", DRACULA_YELLOW + r"\1" + RESET, code)
+
+    return code
+
+
+# ========== 渲染输出 ==========
+def render_content(full_text):
+    parts = re.split(r"(```python.*?```)", full_text, flags=re.S)
+
+    for part in parts:
+        if part.startswith("```python") and part.endswith("```"):
+            raw_code = part[9:-3]
+            highlighted = apply_dracula_theme(raw_code)
+            print(f"{DRACULA_COMMENT}```python{RESET}")
+            print(highlighted.strip())
+            print(f"{DRACULA_COMMENT}```{RESET}")
+        else:
+            if part.strip():
+                print(COLOR_TEXT + part + RESET, end="")
+
+
+# ========== 保存日志 ==========
 def save_dialogue(prompt, response):
-    current_times = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    wrapped_prompt = textwrap.fill(f"Q: {prompt}", width = 80)
-    wrapped_response = textwrap.fill(f"A: {response}", width = 80)
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    clean_resp = re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", response)
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{ts}]\nQ: {prompt}\nA: {clean_resp}\n" + "-" * 40 + "\n")
 
-    with open("chat_history.txt", "a", encoding = "utf-8") as f:
-        f.write(f"[{current_times}]")
-        f.write(f"[{wrapped_prompt}]") 
-        f.write(f"[{wrapped_response}]")
-        f.write(" " * 80)
 
-def chat(prompt, stream = True):
+# ========== 主程序 ==========
+def chat(prompt):
     if not API_KEY:
-        print(" ERROR: can't find API Key. Please set env variable DEEPSEEK_API_KEY")
+        print("ERROR: DEEPSEEK_API_KEY not set")
         return
 
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
@@ -36,46 +90,61 @@ def chat(prompt, stream = True):
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一个运行在终端的ai助手，编程语言为Python，editor为neovim,不要废话，不要拓展，问啥回答啥"},
+                # ⚡️ 修改：强制要求 Inline Comments
+                {
+                    "role": "system",
+                    "content": "你是 Python 专家。请直接给出代码。代码注释请务必写在行尾 (Inline Comments)，保持紧凑，不要写在代码上方。",
+                },
                 {"role": "user", "content": prompt},
             ],
-            stream=stream # 开启流式输出，像黑客帝国一样酷
+            stream=True,
         )
 
-        full_response = "" 
-        if stream:
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    # print and don't change line
-                    print(f"\033[36m{chunk.choices[0].delta.content}\033[0m", end = "", flush=True)
-            print()
-        else:
-            print(response.choices[0].message.content)
-        save_dialogue(prompt, full_response)
-            
+        print()
+        full_content = ""
+
+        print(COLOR_TEXT, end="")
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                full_content += delta
+                print(delta, end="", flush=True)
+        print(RESET + "\n")
+
+        if "```python" in full_content:
+            print(f"{DRACULA_COMMENT}--- Dracula Theme Rendering ---{RESET}\n")
+            render_content(full_content)
+            print("\n")
+
+        save_dialogue(prompt, full_content)
+
     except Exception as e:
-        print(f"error {e}")
+        print(f"Error: {e}")
+
 
 def main():
-    parser = argparse.ArgumentParser(description="DeepSeek Terminal Client")
-    parser.add_argument("prompt", nargs="*", help="Questions")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("prompt", nargs="*", help="Question")
     args = parser.parse_args()
 
     if args.prompt:
-        user_input = " ".join(args.prompt)
-        chat(user_input)
-    else:
-        print("=== DeepSeek ClI (Ctrl+c exit) === " )
-        while True:
-            try:
-                user_input = input("\n>>>")
-                if user_input.lower() in ["exit", "quit"]:
-                    break
-                chat(user_input)
-            except KeyboardInterrupt:
-                print("\nBye!")
+        chat(" ".join(args.prompt))
+        return
+
+    print(f"{COLOR_TEXT}=== DeepSeek CLI (Dracula) ==={RESET}")
+    while True:
+        try:
+            print(f"\n{DRACULA_PINK}>>>{RESET} ", end="")
+            q = input()
+            if q.lower() in ("exit", "quit"):
                 break
+            if not q.strip():
+                continue
+            chat(q)
+        except KeyboardInterrupt:
+            print("\nBye!")
+            break
+
 
 if __name__ == "__main__":
     main()

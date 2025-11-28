@@ -3,7 +3,7 @@ class Solution:
         self.nums = nums
         self.target = target
 
-    def twoSum(self):
+    def toSum(self):
         """
         Return indices of the two numbers that add up to target.
 

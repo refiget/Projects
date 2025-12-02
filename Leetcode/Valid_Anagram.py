@@ -2,7 +2,7 @@ def is_anagram(s, t):
     """
     LeetCode 242. Valid Anagram
     给定两个字符串 s 和 t，编写一个函数来判断 t 是否是 s 的字母异位词（字符种类和数量完全相同，顺序不同）。
-    
+
     仅包含「测试失败场景」的用例（代码逻辑有误时会触发失败）：
     >>> is_anagram("anagram", "nagaram")  # 基础：字母全匹配（顺序不同）→ 预期 True，错返 False 失败
     True
@@ -39,8 +39,11 @@ def is_anagram(s, t):
                 return False
         else:
             return False
-                    
+
     return True
-    
-    
-       
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod(verbose=True)

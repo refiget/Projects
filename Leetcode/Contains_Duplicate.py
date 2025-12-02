@@ -1,8 +1,8 @@
-def contains_duplicate1(nums):   #Use Two loops 
+def contains_duplicate1(nums):  # Use Two loops
     """
     LeetCode 217. Contains Duplicate
     给你一个整数数组 nums，如果任一值在数组中出现至少两次，返回 true；如果数组中每个元素互不相同，返回 false。
-    
+
     仅包含「测试失败场景」的用例（即你的代码若逻辑有误，会触发这些用例失败）：
     >>> contains_duplicate1([1, 2, 3, 1])  # 存在重复（末尾与开头重复）→ 预期 True，若返回 False 则失败
     True
@@ -35,7 +35,7 @@ def contains_duplicate2(nums):  # Use hash_set
     """
     LeetCode 217. Contains Duplicate
     给你一个整数数组 nums，如果任一值在数组中出现至少两次，返回 true；如果数组中每个元素互不相同，返回 false。
-    
+
     仅包含「测试失败场景」的用例（即你的代码若逻辑有误，会触发这些用例失败）：
     >>> contains_duplicate2([1, 2, 3, 1])  # 存在重复（末尾与开头重复）→ 预期 True，若返回 False 则失败
     True
@@ -53,7 +53,7 @@ def contains_duplicate2(nums):  # Use hash_set
     False
     >>> contains_duplicate2([-1, 2, -1, 4])  # 负数与正数混合重复 → 预期 True，若返回 False 则失败
     True
-    """    
+    """
     hash_set = set()
     for num in nums:
         if num in hash_set:
@@ -61,5 +61,9 @@ def contains_duplicate2(nums):  # Use hash_set
         hash_set.add(num)
 
     return False
-        
 
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod(verbose=True)

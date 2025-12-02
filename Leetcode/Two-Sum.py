@@ -3,7 +3,6 @@ class Solution:
         self.nums = nums
         self.target = target
 
-    def toSum(self):
         """
         Return indices of the two numbers that add up to target.
 
@@ -19,9 +18,7 @@ class Solution:
         hashmap = {}
         for i, num in enumerate(self.nums):
             complement = self.target - num
-            if  complement in hashmap:
+            if complement in hashmap:
                 return [hashmap[complement], i]
             else:
                 hashmap[num] = i
-
-
